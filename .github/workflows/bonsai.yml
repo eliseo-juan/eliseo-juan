@@ -1,0 +1,30 @@
+# Regrows the bonsai every week.
+name: bonsai
+on:
+  schedule:
+    - cron: "17 6 * * 1"   # Mondays 06:17 UTC: the week just ended is complete
+  workflow_dispatch:        # run it once by hand
+
+permissions:
+  contents: write
+
+jobs:
+  bonsai:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: StevenBtw/gitbonsai@db57b587d0c97397b0773cc919300be43e1ec1ff # v0.6.1
+        id: bonsai
+        with:
+          output-dir: assets
+          legend: left        # what the colors and signs mean, beside the tree
+
+      - name: Commit if it changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Only the SVGs: the snapshot is never committed to this public repo.
+          git add "${{ steps.bonsai.outputs.light }}" "${{ steps.bonsai.outputs.dark }}"
+          git diff --cached --quiet || git commit -m "Grow bonsai"
+          git push
